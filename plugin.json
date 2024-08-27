@@ -8,5 +8,5 @@
     "version": "1.0.0",
     "description": "PayTR payment gateway for Botble eCommerce system.",
     "minimum_core_version": "7.0.0",
-    "require": ["botble/payment", "botble/ecommerce"]
+    "require": ["botble/payment"]
 }

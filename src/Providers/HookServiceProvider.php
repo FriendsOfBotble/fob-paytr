@@ -2,11 +2,12 @@
 
 namespace FriendsOfBotble\PayTr\Providers;
 
-use FriendsOfBotble\PayTr\Forms\PayTrPaymentMethodForm;
-use FriendsOfBotble\PayTr\Services\Gateways\PayTrPaymentService;
 use Botble\Base\Facades\Html;
 use Botble\Payment\Enums\PaymentMethodEnum;
 use Botble\Payment\Facades\PaymentMethods;
+use Botble\Payment\Supports\PaymentHelper;
+use FriendsOfBotble\PayTr\Forms\PayTrPaymentMethodForm;
+use FriendsOfBotble\PayTr\Services\Gateways\PayTrPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
@@ -46,7 +47,13 @@ class HookServiceProvider extends ServiceProvider
                 $merchantSalt = get_payment_setting('merchant_salt', PAYTR_PAYMENT_METHOD_NAME);
 
                 $amount = $paymentData['amount'] * 100;
-                $merchantOrderId = sprintf('PAYTR%s000OR%s', Str::upper(Str::random(6)), $paymentData['order_id'][0]);
+                $merchantOrderId = sprintf(
+                    'PAYTR%s000OR%sCUSID%s',
+                    Str::upper(Str::random(6)),
+                    $paymentData['order_id'][0],
+                    $paymentData['customer_id'] ?? 0,
+                );
+
                 $products = [];
 
                 foreach ($paymentData['products'] as $product) {
@@ -58,7 +65,7 @@ class HookServiceProvider extends ServiceProvider
 
                 $basket = base64_encode(json_encode($products));
 
-                $testMode = 0;
+                $testMode = 1;
                 $noInstallment = 0;
                 $maxInstallment = 0;
                 $currency = 'TL';
@@ -91,10 +98,10 @@ class HookServiceProvider extends ServiceProvider
                     'no_installment' => $noInstallment,
                     'max_installment' => $maxInstallment,
                     'user_name' => $paymentData['address']['name'],
-                    'user_address' => sprintf('%s %s', $paymentData['address']['address'], $paymentData['address']['city']),
+                    'user_address' => sprintf('%s %s', $paymentData['address']['address'] ?: 'none', $paymentData['address']['city'] ?: 'none'),
                     'user_phone' => $paymentData['address']['phone'],
-                    'merchant_ok_url' => $paymentData['callback_url'],
-                    'merchant_fail_url' => $paymentData['return_url'],
+                    'merchant_ok_url' => route('payments.paytr.callback'),
+                    'merchant_fail_url' => $paymentData['return_url'] ?? PaymentHelper::getCancelURL(),
                     'timeout_limit' => 30,
                     'currency' => $currency,
                     'test_mode' => $testMode,
