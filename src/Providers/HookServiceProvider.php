@@ -2,12 +2,12 @@
 
 namespace FriendsOfBotble\PayTr\Providers;
 
+use FriendsOfBotble\PayTr\Forms\PayTrPaymentMethodForm;
+use FriendsOfBotble\PayTr\Services\Gateways\PayTrPaymentService;
 use Botble\Base\Facades\Html;
 use Botble\Payment\Enums\PaymentMethodEnum;
 use Botble\Payment\Facades\PaymentMethods;
 use Botble\Payment\Supports\PaymentHelper;
-use FriendsOfBotble\PayTr\Forms\PayTrPaymentMethodForm;
-use FriendsOfBotble\PayTr\Services\Gateways\PayTrPaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
@@ -65,7 +65,7 @@ class HookServiceProvider extends ServiceProvider
 
                 $basket = base64_encode(json_encode($products));
 
-                $testMode = 1;
+                $testMode = get_payment_setting('sandbox', PAYTR_PAYMENT_METHOD_NAME);
                 $noInstallment = 0;
                 $maxInstallment = 0;
                 $currency = 'TL';
@@ -97,14 +97,16 @@ class HookServiceProvider extends ServiceProvider
                     'debug_on' => 1,
                     'no_installment' => $noInstallment,
                     'max_installment' => $maxInstallment,
+                    'currency' => $currency,
+                    'test_mode' => $testMode,
                     'user_name' => $paymentData['address']['name'],
                     'user_address' => sprintf('%s %s', $paymentData['address']['address'] ?: 'none', $paymentData['address']['city'] ?: 'none'),
                     'user_phone' => $paymentData['address']['phone'],
-                    'merchant_ok_url' => route('payments.paytr.callback'),
+                    'merchant_ok_url' => $paymentData['callback_url'] ?? PaymentHelper::getRedirectURL(),
+                    'callback_link' => route('payments.paytr.webhook'),
+                    'callback_id' => Str::uuid()->toString(),
                     'merchant_fail_url' => $paymentData['return_url'] ?? PaymentHelper::getCancelURL(),
                     'timeout_limit' => 30,
-                    'currency' => $currency,
-                    'test_mode' => $testMode,
                 ])->json();
 
                 if ($response['status'] !== 'success') {

@@ -3,7 +3,9 @@
 namespace FriendsOfBotble\PayTr\Forms;
 
 use Botble\Base\Facades\BaseHelper;
+use Botble\Base\Forms\FieldOptions\OnOffFieldOption;
 use Botble\Base\Forms\FieldOptions\TextFieldOption;
+use Botble\Base\Forms\Fields\OnOffCheckboxField;
 use Botble\Base\Forms\Fields\TextField;
 use Botble\Payment\Forms\PaymentMethodForm;
 
@@ -34,7 +36,6 @@ class PayTrPaymentMethodForm extends PaymentMethodForm
                 TextFieldOption::make()
                     ->label(trans('plugins/paytr::paytr.merchant_key'))
                     ->value(BaseHelper::hasDemoModeEnabled() ? '*******************************' : get_payment_setting('merchant_key', PAYTR_PAYMENT_METHOD_NAME))
-                    ->toArray()
             )
             ->add(
                 get_payment_setting_key('merchant_salt', PAYTR_PAYMENT_METHOD_NAME),
@@ -42,7 +43,13 @@ class PayTrPaymentMethodForm extends PaymentMethodForm
                 TextFieldOption::make()
                     ->label(trans('plugins/paytr::paytr.merchant_salt'))
                     ->value(BaseHelper::hasDemoModeEnabled() ? '*******************************' : get_payment_setting('merchant_salt', PAYTR_PAYMENT_METHOD_NAME))
-                    ->toArray()
+            )
+            ->add(
+                get_payment_setting_key('sandbox', PAYTR_PAYMENT_METHOD_NAME),
+                OnOffCheckboxField::class,
+                OnOffFieldOption::make()
+                    ->label(trans('plugins/paytr::paytr.sandbox'))
+                    ->value(get_payment_setting('merchant_salt', PAYTR_PAYMENT_METHOD_NAME))
             );
     }
 }

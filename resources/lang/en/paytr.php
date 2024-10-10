@@ -4,6 +4,7 @@ return [
     'merchant_id' => 'Merchant ID',
     'merchant_key' => 'Merchant Key',
     'merchant_salt' => 'Merchant Salt',
+    'sandbox' => 'Sandbox?',
     'instructions' => [
         'step_1' => 'Register an account on :name',
         'step_2' => 'After registration at :name, you will have Merchant ID, Merchant Key and Merchant Salt',

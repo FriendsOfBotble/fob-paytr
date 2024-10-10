@@ -15,6 +15,7 @@ class Plugin extends PluginOperationAbstract
             'payment_paytr_merchant_id',
             'payment_paytr_merchant_key',
             'payment_paytr_merchant_salt',
+            'payment_paytr_sandbox',
             'payment_paytr_status',
         ]);
     }
