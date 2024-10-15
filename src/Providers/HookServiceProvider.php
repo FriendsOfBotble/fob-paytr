@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Throwable;
+use Botble\Ecommerce\Models\Currency as CurrencyEcommerce;
+use Botble\JobBoard\Models\Currency as CurrencyJobBoard;
+use Botble\RealEstate\Models\Currency as CurrencyRealEstate;
+use Botble\Hotel\Models\Currency as CurrencyHotel;
 
 class HookServiceProvider extends ServiceProvider
 {
@@ -32,6 +36,45 @@ class HookServiceProvider extends ServiceProvider
             }
 
             $paymentData = apply_filters(PAYMENT_FILTER_PAYMENT_DATA, [], $request);
+
+            $currentCurrency = get_application_currency();
+            $supportedCurrencies = $this->app->make(PayTrPaymentService::class)->supportedCurrencyCodes();
+
+            if (in_array(strtoupper($currentCurrency->title), $supportedCurrencies)) {
+                $paymentData['currency'] = strtoupper($currentCurrency->title);
+            } else {
+                $currency = match (true) {
+                    is_plugin_active('ecommerce') => CurrencyEcommerce::class,
+                    is_plugin_active('job-board') => CurrencyJobBoard::class,
+                    is_plugin_active('real-estate') => CurrencyRealEstate::class,
+                    is_plugin_active('hotel') => CurrencyHotel::class,
+                    default => null,
+                };
+
+                $supportedCurrency = $currency::query()->whereIn('title', $supportedCurrencies)->first();
+
+                if ($supportedCurrency) {
+                    $paymentData['currency'] = strtoupper($supportedCurrency->title);
+                    if ($currentCurrency->is_default) {
+                        $paymentData['amount'] = $paymentData['amount'] * $supportedCurrency->exchange_rate;
+                    } else {
+                        $paymentData['amount'] = format_price(
+                            $paymentData['amount'] / $currentCurrency->exchange_rate,
+                            $currentCurrency,
+                            true
+                        );
+                    }
+                } else {
+                    $paymentData['currency'] = null;
+                }
+            }
+
+            if (! in_array($paymentData['currency'], $supportedCurrencies)) {
+                $data['error'] = true;
+                $data['message'] = __(":name doesn't support :currency. List of currencies supported by :name: :currencies.", ['name' => 'Payfast', 'currency' => $data['currency'], 'currencies' => implode(', ', $supportedCurrencies)]);
+
+                return $data;
+            }
 
             if (empty($paymentData['address']['email'])) {
                 return [
@@ -65,10 +108,10 @@ class HookServiceProvider extends ServiceProvider
 
                 $basket = base64_encode(json_encode($products));
 
-                $testMode = get_payment_setting('sandbox', PAYTR_PAYMENT_METHOD_NAME);
+                $testMode = get_payment_setting('sandbox', PAYTR_PAYMENT_METHOD_NAME) ? 1 : 0;
                 $noInstallment = 0;
                 $maxInstallment = 0;
-                $currency = 'TL';
+                $currency = $paymentData['currency'];
 
                 $hash = sprintf(
                     '%s%s%s%s%d%s%d%d%s%d',

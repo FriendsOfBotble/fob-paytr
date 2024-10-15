@@ -49,7 +49,8 @@ class PayTrPaymentMethodForm extends PaymentMethodForm
                 OnOffCheckboxField::class,
                 OnOffFieldOption::make()
                     ->label(trans('plugins/paytr::paytr.sandbox'))
-                    ->value(get_payment_setting('merchant_salt', PAYTR_PAYMENT_METHOD_NAME))
+                    ->disabled(BaseHelper::hasDemoModeEnabled())
+                    ->value(BaseHelper::hasDemoModeEnabled() ? true : get_payment_setting('sandbox', PAYTR_PAYMENT_METHOD_NAME))
             );
     }
 }
