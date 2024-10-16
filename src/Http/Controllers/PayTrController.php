@@ -49,11 +49,13 @@ class PayTrController extends BaseController
             default => null,
         };
 
-        $order = $orderModel::query()->where('id', $orderId)->first();
+        if (is_plugin_active('ecommerce') || is_plugin_active('hotel')) {
+            $order = $orderModel::query()->where('id', $orderId)->first();
 
-        if ($order && $order->payment_id) {
-            echo 'OK';
-            exit;
+            if ($order && $order->payment_id) {
+                echo 'OK';
+                exit;
+            }
         }
 
         if ($request['status'] == 'success') {
