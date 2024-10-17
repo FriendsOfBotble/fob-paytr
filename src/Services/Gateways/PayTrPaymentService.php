@@ -20,6 +20,7 @@ class PayTrPaymentService extends PayTrPaymentAbstract
     {
         return [
             Currency::TL,
+            Currency::TRY,
             Currency::EUR,
             Currency::USD,
             Currency::GBP,

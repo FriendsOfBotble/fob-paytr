@@ -111,7 +111,7 @@ class HookServiceProvider extends ServiceProvider
                 $testMode = get_payment_setting('sandbox', PAYTR_PAYMENT_METHOD_NAME) ? 1 : 0;
                 $noInstallment = 0;
                 $maxInstallment = 0;
-                $currency = $paymentData['currency'];
+                $currency = ($paymentData['currency'] == 'TRY' ? 'TL' : $paymentData['currency']);
 
                 $hash = sprintf(
                     '%s%s%s%s%d%s%d%d%s%d',
@@ -137,7 +137,7 @@ class HookServiceProvider extends ServiceProvider
                     'payment_amount' => $amount,
                     'paytr_token' => $token,
                     'user_basket' => $basket,
-                    'debug_on' => 1,
+                    'debug_on' => $testMode,
                     'no_installment' => $noInstallment,
                     'max_installment' => $maxInstallment,
                     'currency' => $currency,
@@ -157,9 +157,9 @@ class HookServiceProvider extends ServiceProvider
                     $data['message'] = $response['reason'];
 
                     return $data;
-                }
-
-                echo view('plugins/paytr::paytr', [
+                } 
+                
+                echo view('plugins/paytr::paytr', [ 
                     'token' => $response['token'],
                 ]);
 

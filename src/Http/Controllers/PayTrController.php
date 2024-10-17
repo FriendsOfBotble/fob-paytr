@@ -66,9 +66,11 @@ class PayTrController extends BaseController
             //# 3) 1. ADIM'da gönderilen payment_amount sipariş tutarı taksitli alışveriş yapılması durumunda
             //# değişebilir. Güncel tutarı $post['total_amount'] değerinden alarak muhasebe işlemlerinizde kullanabilirsiniz.
 
+            $currency = $request['currency'] == 'TL' ? 'TRY' : $request['currency'];
+
             do_action(PAYMENT_ACTION_PAYMENT_PROCESSED, [
                 'amount' => $request['total_amount'] / 100,
-                'currency' => $request['currency'],
+                'currency' =>  $currency,
                 'charge_id' => $chargeId = $request['merchant_oid'],
                 'payment_channel' => PAYTR_PAYMENT_METHOD_NAME,
                 'status' => PaymentStatusEnum::COMPLETED,
