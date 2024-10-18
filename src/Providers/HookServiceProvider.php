@@ -2,21 +2,23 @@
 
 namespace FriendsOfBotble\PayTr\Providers;
 
-use FriendsOfBotble\PayTr\Forms\PayTrPaymentMethodForm;
-use FriendsOfBotble\PayTr\Services\Gateways\PayTrPaymentService;
 use Botble\Base\Facades\Html;
+use Botble\Ecommerce\Models\Currency as CurrencyEcommerce;
+use Botble\Hotel\Models\Booking;
+use Botble\Hotel\Models\Currency as CurrencyHotel;
+use Botble\JobBoard\Models\Currency as CurrencyJobBoard;
 use Botble\Payment\Enums\PaymentMethodEnum;
 use Botble\Payment\Facades\PaymentMethods;
 use Botble\Payment\Supports\PaymentHelper;
+use Botble\RealEstate\Models\Currency as CurrencyRealEstate;
+use FriendsOfBotble\PayTr\Forms\PayTrPaymentMethodForm;
+use FriendsOfBotble\PayTr\Services\Gateways\PayTrPaymentService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
 use Throwable;
-use Botble\Ecommerce\Models\Currency as CurrencyEcommerce;
-use Botble\JobBoard\Models\Currency as CurrencyJobBoard;
-use Botble\RealEstate\Models\Currency as CurrencyRealEstate;
-use Botble\Hotel\Models\Currency as CurrencyHotel;
 
 class HookServiceProvider extends ServiceProvider
 {
@@ -129,6 +131,18 @@ class HookServiceProvider extends ServiceProvider
 
                 $token = base64_encode(hash_hmac('sha256', sprintf('%s%s', $hash, $merchantSalt), $merchantKey, true));
 
+                $merchantOkUrl = $paymentData['callback_url'] ?? PaymentHelper::getRedirectURL($paymentData['checkout_token'] ?? null);
+
+                if (is_plugin_active('hotel')) {
+                    $booking = Booking::query()
+                        ->select('transaction_id')
+                        ->find(Arr::get($paymentData, 'order_id.0'));
+
+                    if ($booking) {
+                        $merchantOkUrl = PaymentHelper::getRedirectURL($booking->transaction_id ?? null);
+                    }
+                }
+
                 $response = Http::asForm()->post('https://www.paytr.com/odeme/api/get-token', [
                     'merchant_id' => $merchantId,
                     'user_ip' => $request->ip(),
@@ -145,7 +159,7 @@ class HookServiceProvider extends ServiceProvider
                     'user_name' => $paymentData['address']['name'],
                     'user_address' => sprintf('%s %s', $paymentData['address']['address'] ?: 'none', $paymentData['address']['city'] ?: 'none'),
                     'user_phone' => $paymentData['address']['phone'],
-                    'merchant_ok_url' => $paymentData['callback_url'] ?? PaymentHelper::getRedirectURL(),
+                    'merchant_ok_url' => $merchantOkUrl,
                     'callback_link' => route('payments.paytr.webhook'),
                     'callback_id' => Str::uuid()->toString(),
                     'merchant_fail_url' => $paymentData['return_url'] ?? PaymentHelper::getCancelURL(),
@@ -157,9 +171,9 @@ class HookServiceProvider extends ServiceProvider
                     $data['message'] = $response['reason'];
 
                     return $data;
-                } 
-                
-                echo view('plugins/paytr::paytr', [ 
+                }
+
+                echo view('plugins/paytr::paytr', [
                     'token' => $response['token'],
                 ]);
 
