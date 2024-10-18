@@ -1,5 +1,5 @@
 {
-    "id": "friendsofbotble/paytr",
+    "id": "friendsofbotble/fob-paytr",
     "name": "PayTR",
     "namespace": "FriendsOfBotble\\PayTr\\",
     "provider": "FriendsOfBotble\\PayTr\\Providers\\PayTrServiceProvider",
